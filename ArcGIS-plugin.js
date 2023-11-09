@@ -4,13 +4,13 @@ export class ArcGISGeocoderPlugin extends LitElement {
 
   static properties = {
     address: { type: String },
-    pin: { type: String },
+    coordinates: { type: Object },
   };
 
   constructor() {
     super();
     this.address = '';
-    this.pin = '';
+    this.coordinates = {};
   }
 
   updated(changedProperties) {
@@ -25,21 +25,21 @@ export class ArcGISGeocoderPlugin extends LitElement {
 
     // Replace 'YOUR_ARCGIS_API_KEY' with your actual ArcGIS API key
     const arcgisApiKey = 'YOUR_ARCGIS_API_KEY';
-    const arcgisUrl = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${address}&outFields=pin&apiKey=${arcgisApiKey}`;
+    const arcgisUrl = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${address}&outFields=Addr_type&apiKey=${arcgisApiKey}`;
 
     fetch(arcgisUrl)
       .then(response => response.json())
       .then(data => {
         const candidate = data.candidates[0];
         if (candidate) {
-          this.pin = candidate.attributes.pin;
+          this.coordinates = candidate.location;
         } else {
-          this.pin = 'Not available';
+          this.coordinates = { error: 'Coordinates not available' };
         }
       })
       .catch(error => {
         console.error('Error during geocoding:', error);
-        this.pin = 'Geocoding error';
+        this.coordinates = { error: 'Geocoding error' };
       });
   }
 
@@ -54,10 +54,10 @@ export class ArcGISGeocoderPlugin extends LitElement {
           title: 'Address',
           description: 'Enter the address for geocoding',
         },
-        pin: {
-          type: 'string',
-          title: 'Pin',
-          description: 'Retrieved Pin from the ArcGIS database',
+        coordinates: {
+          type: 'object',
+          title: 'Coordinates',
+          description: 'Retrieved Coordinates from the ArcGIS database',
         },
       },
     };
@@ -68,7 +68,10 @@ export class ArcGISGeocoderPlugin extends LitElement {
       <label for="address">Enter Address:</label>
       <input id="address" type="text" .value=${this.address} @input=${(e) => this.address = e.target.value}>
       <p>
-        Pin: ${this.pin}
+        ${this.coordinates.error
+          ? html`<strong>${this.coordinates.error}</strong>`
+          : html`Latitude: ${this.coordinates.y}, Longitude: ${this.coordinates.x}`
+        }
       </p>
     `;
   }
